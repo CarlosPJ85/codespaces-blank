@@ -321,6 +321,14 @@
       font-size: 11px;
     }
     .footer strong { color: var(--ink); }
+    .celebration-canvas {
+      position: fixed;
+      z-index: 5;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
     @keyframes arrive {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -347,6 +355,7 @@
   </style>
 </head>
 <body>
+  <canvas class="celebration-canvas" id="celebration-canvas" aria-hidden="true"></canvas>
   <div class="page">
     <header class="topbar">
       <div class="brand"><span class="brand-mark" aria-hidden="true">×</span> Gato Club</div>
@@ -406,6 +415,8 @@
     const status = document.querySelector("#game-status");
     const turnToken = document.querySelector("#turn-token");
     const roundLabel = document.querySelector("#round-label");
+    const celebrationCanvas = document.querySelector("#celebration-canvas");
+    const celebrationContext = celebrationCanvas.getContext("2d");
     const playerNameInputs = {
       X: document.querySelector("#name-x"),
       O: document.querySelector("#name-o")
@@ -420,6 +431,144 @@
     let currentPlayer = "X";
     let round = 1;
     let gameOver = false;
+    let celebrationFrame = null;
+    let celebrationTimeout = null;
+
+    function resizeCelebrationCanvas() {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      celebrationCanvas.width = Math.round(window.innerWidth * pixelRatio);
+      celebrationCanvas.height = Math.round(window.innerHeight * pixelRatio);
+      celebrationContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    }
+
+    function clearCelebration() {
+      if (celebrationFrame !== null) {
+        cancelAnimationFrame(celebrationFrame);
+        celebrationFrame = null;
+      }
+      if (celebrationTimeout !== null) {
+        clearTimeout(celebrationTimeout);
+        celebrationTimeout = null;
+      }
+      celebrationContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    }
+
+    function playTrumpetFanfare() {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) {
+        console.warn("El navegador no admite audio para la celebración.");
+        return;
+      }
+
+      try {
+        const audio = new AudioContext();
+        audio.resume().then(() => {
+          const master = audio.createGain();
+          master.gain.value = 0.16;
+          master.connect(audio.destination);
+          const notes = [
+            { frequency: 523.25, start: 0, duration: 0.2 },
+            { frequency: 659.25, start: 0.2, duration: 0.2 },
+            { frequency: 783.99, start: 0.4, duration: 0.2 },
+            { frequency: 1046.5, start: 0.62, duration: 0.75 }
+          ];
+
+          notes.forEach(({ frequency, start, duration }) => {
+            const oscillator = audio.createOscillator();
+            const filter = audio.createBiquadFilter();
+            const envelope = audio.createGain();
+            const noteStart = audio.currentTime + start;
+            filter.type = "lowpass";
+            filter.frequency.value = 1800;
+            oscillator.type = "sawtooth";
+            oscillator.frequency.value = frequency;
+            envelope.gain.setValueAtTime(0.0001, noteStart);
+            envelope.gain.exponentialRampToValueAtTime(0.7, noteStart + 0.035);
+            envelope.gain.setValueAtTime(0.7, noteStart + duration * 0.72);
+            envelope.gain.exponentialRampToValueAtTime(0.0001, noteStart + duration);
+            oscillator.connect(filter);
+            filter.connect(envelope);
+            envelope.connect(master);
+            oscillator.start(noteStart);
+            oscillator.stop(noteStart + duration);
+          });
+
+          window.setTimeout(() => audio.close(), 2200);
+        }).catch((error) => {
+          console.warn("No se pudo reproducir el sonido de celebración.", error);
+          audio.close();
+        });
+      } catch (error) {
+        console.warn("No se pudo iniciar el sonido de celebración.", error);
+      }
+    }
+
+    function celebrateWin() {
+      clearCelebration();
+      playTrumpetFanfare();
+
+      const colors = ["#e76048", "#287c70", "#f0c84b", "#7564b5", "#f28a36"];
+      const origins = [
+        [window.innerWidth * 0.2, window.innerHeight * 0.32],
+        [window.innerWidth * 0.5, window.innerHeight * 0.22],
+        [window.innerWidth * 0.8, window.innerHeight * 0.32]
+      ];
+      const particles = origins.flatMap(([x, y]) =>
+        Array.from({ length: 42 }, () => {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 2 + Math.random() * 4;
+          const life = 55 + Math.random() * 35;
+          return {
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life,
+            maxLife: life,
+            radius: 2 + Math.random() * 2,
+            color: colors[Math.floor(Math.random() * colors.length)]
+          };
+        })
+      );
+
+      function drawParticles(animate) {
+        celebrationContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        particles.forEach((particle) => {
+          if (particle.life <= 0) return;
+          celebrationContext.globalAlpha = particle.life / particle.maxLife;
+          celebrationContext.fillStyle = particle.color;
+          celebrationContext.beginPath();
+          celebrationContext.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+          celebrationContext.fill();
+          if (animate) {
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            particle.vy += 0.045;
+            particle.vx *= 0.99;
+            particle.life -= 1;
+          }
+        });
+        celebrationContext.globalAlpha = 1;
+      }
+
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        drawParticles(false);
+        celebrationTimeout = window.setTimeout(clearCelebration, 1000);
+        return;
+      }
+
+      function animateParticles() {
+        drawParticles(true);
+        if (particles.some((particle) => particle.life > 0)) {
+          celebrationFrame = requestAnimationFrame(animateParticles);
+        } else {
+          celebrationFrame = null;
+          clearCelebration();
+        }
+      }
+
+      celebrationFrame = requestAnimationFrame(animateParticles);
+    }
 
     themeToggle.addEventListener("click", () => {
       const isDark = document.documentElement.dataset.theme !== "dark";
@@ -444,6 +593,7 @@
         document.querySelector(`#score-${winner.toLowerCase()}`).textContent = scores[winner];
         status.textContent = `¡Gana ${getPlayerName(winner)}!`;
         line.forEach((index) => cells[index].classList.add("is-winner"));
+        celebrateWin();
       } else {
         scores.draw += 1;
         document.querySelector("#score-draw").textContent = scores.draw;
@@ -473,6 +623,7 @@
     }
 
     function startRound() {
+      clearCelebration();
       board = Array(9).fill("");
       currentPlayer = "X";
       gameOver = false;
@@ -487,6 +638,8 @@
       updateTurn();
     }
 
+    resizeCelebrationCanvas();
+    window.addEventListener("resize", resizeCelebrationCanvas);
     cells.forEach((cell) => {
       cell.addEventListener("click", () => play(Number(cell.dataset.index)));
     });
