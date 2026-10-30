@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f4ec">
+  <title>Gato Club</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f6f4ec;
+      --ink: #20231f;
+      --muted: #77786f;
+      --line: #deddd3;
+      --page-dot: #d8d5c9;
+      --input-line: #c9c6b9;
+      --panel-line: #d9d7cc;
+      --cell: #f4f2e9;
+      --cell-hover: #eeece1;
+      --cell-hover-border: #d3d0c3;
+      --winner: #fff0bc;
+      --control-hover-border: #c9c6b9;
+      --primary-hover: #3a4039;
+      --coral: #e76048;
+      --teal: #287c70;
+      --yellow: #f0c84b;
+      --white: #fffef9;
+      font-family: "Trebuchet MS", "Avenir Next", sans-serif;
+      font-synthesis: none;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --paper: #1c211f;
+      --ink: #f1efe6;
+      --muted: #a7aaa0;
+      --line: #3b423d;
+      --page-dot: #343a35;
+      --input-line: #555d56;
+      --panel-line: #414841;
+      --cell: #292f2b;
+      --cell-hover: #353d37;
+      --cell-hover-border: #59635b;
+      --winner: #51451f;
+      --control-hover-border: #69736b;
+      --primary-hover: #39463d;
+      --white: #252b27;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background-color: var(--paper);
+      background-image: radial-gradient(var(--page-dot) 0.7px, transparent 0.7px);
+      background-size: 19px 19px;
+    }
+    button { font: inherit; }
+
+    .page {
+      width: min(100% - 40px, 1040px);
+      min-height: 100vh;
+      margin-inline: auto;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .topbar {
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+    }
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      background: var(--yellow);
+      border: 1.5px solid var(--ink);
+      border-radius: 50%;
+      font-family: Georgia, serif;
+      font-size: 19px;
+      line-height: 1;
+      transform: rotate(-10deg);
+    }
+    .edition {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.82fr);
+      align-items: center;
+      gap: clamp(36px, 8vw, 100px);
+      padding-block: 48px;
+    }
+    .intro { max-width: 430px; }
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 17px;
+      color: var(--teal);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      width: 22px;
+      height: 2px;
+      content: "";
+      background: currentColor;
+    }
+    h1 {
+      max-width: 420px;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(54px, 8vw, 92px);
+      font-weight: 700;
+      line-height: 0.92;
+    }
+    h1 span {
+      display: block;
+      color: var(--coral);
+      font-style: italic;
+    }
+    .title-image {
+      display: inline-block;
+      width: 0.85em;
+      height: auto;
+      margin-inline: 0.04em;
+      vertical-align: middle;
+    }
+    .intro-copy {
+      max-width: 340px;
+      margin: 23px 0 34px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    .scoreboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      max-width: 380px;
+      border-block: 1px solid var(--line);
+    }
+    .score {
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      padding: 12px 14px;
+    }
+    .score + .score { border-left: 1px solid var(--line); }
+    .score-label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .score-value {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .score-x .score-value { color: var(--coral); }
+    .score-o .score-value { color: var(--teal); }
+    .player-name {
+      width: 100%;
+      min-width: 0;
+      padding: 3px 0;
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      border-bottom: 1px dashed var(--input-line);
+      border-radius: 0;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .player-name:focus { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+    .game-panel {
+      width: min(100%, 410px);
+      justify-self: center;
+      padding: 24px;
+      background: var(--white);
+      border: 1px solid var(--panel-line);
+      border-radius: 7px;
+      box-shadow: 7px 7px 0 var(--yellow);
+      animation: arrive 500ms ease-out both;
+    }
+    .game-topline {
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .turn-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .turn-token {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      background: var(--paper);
+      border-radius: 50%;
+      font-family: Georgia, serif;
+      font-size: 21px;
+      font-weight: 700;
+    }
+    .turn-token.is-x { color: var(--coral); }
+    .turn-token.is-o { color: var(--teal); }
+    .round-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      aspect-ratio: 1;
+    }
+    .cell {
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      padding: 0;
+      color: var(--ink);
+      background: var(--cell);
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(56px, 10vw, 82px);
+      font-weight: 700;
+      line-height: 1;
+      transition: background-color 140ms ease, transform 140ms ease, border-color 140ms ease;
+    }
+    .cell:not(:disabled):hover {
+      background: var(--cell-hover);
+      border-color: var(--cell-hover-border);
+      transform: translateY(-2px);
+    }
+    .cell:focus-visible, .control:focus-visible {
+      outline: 3px solid var(--teal);
+      outline-offset: 3px;
+    }
+    .cell:disabled { cursor: default; }
+    .cell.mark-x { color: var(--coral); }
+    .cell.mark-o { color: var(--teal); }
+    .cell.is-winner { background: var(--winner); }
+    .game-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding-top: 20px;
+    }
+    .control {
+      min-height: 42px;
+      padding: 0 15px;
+      color: var(--ink);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      transition: background-color 140ms ease, border-color 140ms ease;
+    }
+    .control:hover { background: var(--paper); border-color: var(--control-hover-border); }
+    .control.primary {
+      color: var(--white);
+      background: var(--ink);
+      border-color: var(--ink);
+    }
+    .control.primary:hover { background: var(--primary-hover); }
+    .footer {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 11px;
+    }
+    .footer strong { color: var(--ink); }
+    @keyframes arrive {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 720px) {
+      .page { width: min(100% - 32px, 460px); }
+      .topbar { min-height: 68px; }
+      .topbar-actions { gap: 10px; }
+      main { grid-template-columns: 1fr; gap: 30px; padding-block: 35px 40px; }
+      .intro { max-width: none; }
+      h1 { font-size: clamp(58px, 15vw, 78px); }
+      .intro-copy { margin-block: 16px 22px; }
+      .scoreboard { max-width: none; }
+      .score { min-height: 70px; }
+      .game-panel { padding: 18px; }
+      .cell { font-size: clamp(58px, 17vw, 76px); }
+    }
+    @media (max-width: 420px) {
+      .edition { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">×</span> Gato Club</div>
+      <div class="topbar-actions">
+        <button class="control theme-toggle" id="theme-toggle" type="button">Tema oscuro</button>
+        <div class="edition">Edición de sobremesa</div>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Dos personas · Un tablero</p>
+        <h1 id="page-title">El gato <span>de<img class="title-image" src="gato-tablero.png" alt="Tablero de gato dibujado a mano"> siempre.</span></h1>
+        <p class="intro-copy">Tres en línea para ganar. Sin prisa, sin papelitos perdidos: solo hace falta elegir quién empieza.</p>
+
+        <div class="scoreboard" aria-label="Marcador">
+          <div class="score score-x"><label class="score-label" for="name-x">Nombre de X</label><input class="player-name" id="name-x" type="text" value="Jugador X" maxlength="16" autocomplete="off"><span class="score-value" id="score-x">0</span></div>
+          <div class="score"><span class="score-label">Empates</span><span class="score-value" id="score-draw">0</span></div>
+          <div class="score score-o"><label class="score-label" for="name-o">Nombre de O</label><input class="player-name" id="name-o" type="text" value="Jugador O" maxlength="16" autocomplete="off"><span class="score-value" id="score-o">0</span></div>
+        </div>
+      </section>
+
+      <section class="game-panel" aria-label="Partida de gato">
+        <div class="game-topline">
+          <div class="turn-indicator" aria-live="polite" aria-atomic="true">
+            <span class="turn-token is-x" id="turn-token" aria-hidden="true">X</span>
+            <span id="game-status">Turno de X</span>
+          </div>
+          <span class="round-label" id="round-label">Ronda 1</span>
+        </div>
+
+        <div class="board" id="board" role="grid" aria-label="Tablero de gato">
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 1, vacía" data-index="0"></button>
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 2, vacía" data-index="1"></button>
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 3, vacía" data-index="2"></button>
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 4, vacía" data-index="3"></button>
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 5, vacía" data-index="4"></button>
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 6, vacía" data-index="5"></button>
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 7, vacía" data-index="6"></button>
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 8, vacía" data-index="7"></button>
+          <button class="cell" type="button" role="gridcell" aria-label="Casilla 9, vacía" data-index="8"></button>
+        </div>
+
+        <div class="game-controls">
+          <button class="control" id="reset-scores" type="button">Borrar marcador</button>
+          <button class="control primary" id="new-round" type="button">Nueva ronda</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer"><span>Regla sencilla: <strong>tres en línea.</strong></span><span>¿Quién va por la revancha?</span></footer>
+  </div>
+
+  <script>
+    const themeToggle = document.querySelector("#theme-toggle");
+    const cells = [...document.querySelectorAll(".cell")];
+    const status = document.querySelector("#game-status");
+    const turnToken = document.querySelector("#turn-token");
+    const roundLabel = document.querySelector("#round-label");
+    const playerNameInputs = {
+      X: document.querySelector("#name-x"),
+      O: document.querySelector("#name-o")
+    };
+    const scores = { X: 0, O: 0, draw: 0 };
+    const winningLines = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+    let board = Array(9).fill("");
+    let currentPlayer = "X";
+    let round = 1;
+    let gameOver = false;
+
+    themeToggle.addEventListener("click", () => {
+      const isDark = document.documentElement.dataset.theme !== "dark";
+      document.documentElement.dataset.theme = isDark ? "dark" : "light";
+      themeToggle.textContent = isDark ? "Tema claro" : "Tema oscuro";
+    });
+
+    function getPlayerName(player) {
+      return playerNameInputs[player].value.trim() || `Jugador ${player}`;
+    }
+
+    function updateTurn() {
+      turnToken.textContent = currentPlayer;
+      turnToken.className = `turn-token is-${currentPlayer.toLowerCase()}`;
+      status.textContent = `Turno de ${getPlayerName(currentPlayer)}`;
+    }
+
+    function finishRound(winner, line) {
+      gameOver = true;
+      if (winner) {
+        scores[winner] += 1;
+        document.querySelector(`#score-${winner.toLowerCase()}`).textContent = scores[winner];
+        status.textContent = `¡Gana ${getPlayerName(winner)}!`;
+        line.forEach((index) => cells[index].classList.add("is-winner"));
+      } else {
+        scores.draw += 1;
+        document.querySelector("#score-draw").textContent = scores.draw;
+        status.textContent = "¡Empate!";
+      }
+      cells.forEach((cell) => { cell.disabled = true; });
+    }
+
+    function play(index) {
+      if (gameOver || board[index]) return;
+
+      board[index] = currentPlayer;
+      const cell = cells[index];
+      cell.textContent = currentPlayer;
+      cell.classList.add(`mark-${currentPlayer.toLowerCase()}`);
+      cell.setAttribute("aria-label", `Casilla ${index + 1}, ${currentPlayer}`);
+
+      const winningLine = winningLines.find((line) => line.every((position) => board[position] === currentPlayer));
+      if (winningLine) {
+        finishRound(currentPlayer, winningLine);
+      } else if (board.every(Boolean)) {
+        finishRound(null, []);
+      } else {
+        currentPlayer = currentPlayer === "X" ? "O" : "X";
+        updateTurn();
+      }
+    }
+
+    function startRound() {
+      board = Array(9).fill("");
+      currentPlayer = "X";
+      gameOver = false;
+      round += 1;
+      roundLabel.textContent = `Ronda ${round}`;
+      cells.forEach((cell, index) => {
+        cell.textContent = "";
+        cell.disabled = false;
+        cell.className = "cell";
+        cell.setAttribute("aria-label", `Casilla ${index + 1}, vacía`);
+      });
+      updateTurn();
+    }
+
+    cells.forEach((cell) => {
+      cell.addEventListener("click", () => play(Number(cell.dataset.index)));
+    });
+    Object.entries(playerNameInputs).forEach(([player, input]) => {
+      input.addEventListener("input", () => {
+        if (!gameOver && currentPlayer === player) updateTurn();
+      });
+    });
+    document.querySelector("#new-round").addEventListener("click", startRound);
+    document.querySelector("#reset-scores").addEventListener("click", () => {
+      scores.X = 0;
+      scores.O = 0;
+      scores.draw = 0;
+      document.querySelector("#score-x").textContent = "0";
+      document.querySelector("#score-o").textContent = "0";
+      document.querySelector("#score-draw").textContent = "0";
+    });
+  </script>
+</body>
+</html>
